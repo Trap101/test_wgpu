@@ -1,18 +1,25 @@
+use std::num::TryFromIntError;
 use shader_learning::run;
-trait c{
-    fn print(&self);
-}
-struct a{
-    s:String
-}
-impl c for a{
-    fn print(&self) {
-        println!("{}",self.s)
+fn a(){
+    let s = String::from("sadasdsad").as_ptr();
+    unsafe{
+        *s;
     }
-} 
+}
+
 fn main(){
-    let f=a{s:String::from("bs")};
-    c::print(&f);
-    println!("helll world");
     pollster::block_on(run());
 }
+// fn assign<T>(input: &mut T, val: T) {
+//      
+//     *input = val;
+// }
+// 
+// fn main() {
+//     let mut hello: &'static str = "hello";
+//     {
+//         let world = String::from("world");
+//         assign(&mut hello, &world);
+//     }
+//     println!("{hello}"); // use after free 😿
+// }
