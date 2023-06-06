@@ -1,11 +1,4 @@
-use std::num::TryFromIntError;
 use shader_learning::run;
-fn a(){
-    let s = String::from("sadasdsad").as_ptr();
-    unsafe{
-        *s;
-    }
-}
 
 fn main(){
     pollster::block_on(run());

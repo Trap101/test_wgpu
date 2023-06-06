@@ -130,11 +130,17 @@ impl State {
             view_formats: vec![],
         };
         debug!("{:?}", &config);
-        surface.configure(&device, &config);
+        // surface.configure(&device, &config);
+        // let diffuse_bytes = include_bytes!("happy-tree.png");
+        // let diffuse_image = image::load_from_memory(diffuse_bytes).unwrap();
+        // let diffuse_rgba = diffuse_image.to_rgba8();
+        //
+        // use image::GenericImageView;
+        // let dimensions = diffuse_image.dimensions();
         let frag = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("frag"),
             source: wgpu::ShaderSource::Glsl {
-                shader: include_str!("my_frag1.frag").into(),
+                shader: include_str!("frag1.frag").into(),
                 stage: naga::ShaderStage::Fragment,
                 defines: FastHashMap::default(),
             },
@@ -142,7 +148,7 @@ impl State {
         let vertex = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("vertex"),
             source: wgpu::ShaderSource::Glsl {
-                shader: include_str!("my_vert1.vert").into(),
+                shader: include_str!("vert1.vert").into(),
                 stage: naga::ShaderStage::Vertex,
                 defines: FastHashMap::default(),
             },
@@ -159,7 +165,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &vertex,
                 entry_point: "main",        // 1.
-                buffers: &[/*Vertex::desc(*/], // 2.
+                buffers: &[Vertex::desc()], // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
@@ -237,6 +243,7 @@ impl State {
     fn update(&mut self) {}
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -262,8 +269,8 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            // render_pass.draw_indexed(0..self.num_indices, 0,0..1);
-            render_pass.draw(0..3, 0..1)
+            render_pass.draw_indexed(0..self.num_indices, 0,0..1);
+            // render_pass.draw(0..3, 0..1)
 
             // 3.
         }
