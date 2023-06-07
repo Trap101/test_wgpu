@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-
 use log::debug;
-use naga::FastHashMap;
+use naga::{FastHashMap, ShaderStage};
 use rustc_hash::FxHashMap;
-use wgpu::{ShaderStages, include_wgsl};
+use wgpu::{include_wgsl};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -37,12 +36,12 @@ impl State {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
         });
-
         // # Safety
         //
         // The surface needs to live as long as the window that created it.
         // State owns the window so this should be safe.
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
+        
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -69,6 +68,7 @@ impl State {
             .await
             .unwrap();
         let surface_caps = surface.get_capabilities(&adapter);
+        dbg!(&surface_caps);
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
@@ -87,27 +87,41 @@ impl State {
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
         };
-        debug!("{:?}",&config);
+        dbg!(&device.features());
+        dbg!(&device.limits());
+        println!("{:?}",&config);
+        println!("{:?}",&adapter);
+        dbg!(&adapter.get_info());
         surface.configure(&device, &config);
+        println!("{:?}",&surface);
         let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));        
+        let vert = device.create_shader_module(wgpu::ShaderModuleDescriptor { 
+            label: Some("vert"), 
+            source:wgpu::ShaderSource::Glsl { shader: include_str!("vert1.vert").into(), stage: ShaderStage::Vertex, defines: FastHashMap::default() } 
+        });
+        let frag = device.create_shader_module(wgpu::ShaderModuleDescriptor { 
+            label: Some("frag"), 
+            source:wgpu::ShaderSource::Glsl { shader: include_str!("frag1.frag").into(), stage: ShaderStage::Fragment, defines: FastHashMap::default() } 
+        });
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
+        println!("{:?}",render_pipeline_layout);
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main", // 1.
+                module: &vert,
+                entry_point: "main", // 1.
                 buffers: &[],           // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
-                module: &shader,
-                entry_point: "fs_main",
+                module: &frag,
+                entry_point: "main",
                 targets: &[Some(wgpu::ColorTargetState {
                     // 4.
                     format: config.format,
@@ -135,7 +149,7 @@ impl State {
             },
             multiview: None, // 5.
         });
-
+        println!("{:?}",&render_pipeline);
         Self {
             window,
             surface,
@@ -209,7 +223,7 @@ impl State {
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&self.render_pipeline); // 2.
-            render_pass.draw(0..3, 0..1); // 3.
+            render_pass.draw(0..3, 0..1);
         }
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));

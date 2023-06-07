@@ -1,7 +1,7 @@
-
-
+#version 450
 void main(){
-    float x = (1.0-2)*0.5;
-    float y = (1*2.0-1.0)*0.5;
-    gl_Position=vec4(x,y,0.0,1.0);
+    vec2 pos[3] = vec2[3]( vec2(-0.7, 0.7),
+                           vec2(0.7, 0.7),
+                           vec2(0.0, -0.7) );
+    gl_Position = vec4( pos[uint(gl_VertexIndex)], 0.0, 1.0 );
 }
