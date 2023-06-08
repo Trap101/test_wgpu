@@ -1,8 +1,4 @@
-use std::collections::HashMap;
-use log::debug;
 use naga::{FastHashMap, ShaderStage};
-use rustc_hash::FxHashMap;
-use wgpu::{include_wgsl};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -16,18 +12,11 @@ struct State {
     size: winit::dpi::PhysicalSize<u32>,
     window: Window,
     render_pipeline: wgpu::RenderPipeline,
-    color: wgpu::Color,
 }
 
 impl State {
     // ...
     async fn new(window: Window) -> Self {
-        let color: wgpu::Color = wgpu::Color {
-            r: 0.1,
-            g: 0.2,
-            b: 0.3,
-            a: 1.0,
-        };
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -41,7 +30,7 @@ impl State {
         // The surface needs to live as long as the window that created it.
         // State owns the window so this should be safe.
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
-        
+
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -87,21 +76,22 @@ impl State {
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
         };
-        dbg!(&device.features());
-        dbg!(&device.limits());
-        println!("{:?}",&config);
-        println!("{:?}",&adapter);
-        dbg!(&adapter.get_info());
         surface.configure(&device, &config);
-        println!("{:?}",&surface);
-        let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));        
-        let vert = device.create_shader_module(wgpu::ShaderModuleDescriptor { 
-            label: Some("vert"), 
-            source:wgpu::ShaderSource::Glsl { shader: include_str!("vert1.vert").into(), stage: ShaderStage::Vertex, defines: FastHashMap::default() } 
+        let vert = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("vert"),
+            source: wgpu::ShaderSource::Glsl {
+                shader: include_str!("vert1.vert").into(),
+                stage: ShaderStage::Vertex,
+                defines: FastHashMap::default(),
+            },
         });
-        let frag = device.create_shader_module(wgpu::ShaderModuleDescriptor { 
-            label: Some("frag"), 
-            source:wgpu::ShaderSource::Glsl { shader: include_str!("frag1.frag").into(), stage: ShaderStage::Fragment, defines: FastHashMap::default() } 
+        let frag = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("frag"),
+            source: wgpu::ShaderSource::Glsl {
+                shader: include_str!("frag1.frag").into(),
+                stage: ShaderStage::Fragment,
+                defines: FastHashMap::default(),
+            },
         });
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -109,14 +99,13 @@ impl State {
                 bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
-        println!("{:?}",render_pipeline_layout);
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vert,
                 entry_point: "main", // 1.
-                buffers: &[],           // 2.
+                buffers: &[],        // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
@@ -149,7 +138,6 @@ impl State {
             },
             multiview: None, // 5.
         });
-        println!("{:?}",&render_pipeline);
         Self {
             window,
             surface,
@@ -157,7 +145,6 @@ impl State {
             queue,
             config,
             size,
-            color,
             render_pipeline,
         }
     }
@@ -165,43 +152,19 @@ impl State {
         &self.window
     }
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.
-        width > 0 && new_size.height > 0 {
+        if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
         }
     }
-    fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::CursorMoved {
-                device_id,
-                position,
-                modifiers,
-            } => {
-                let x_percent: f64 = position.x / self.size.width as f64;
-                let y_percent = position.y / self.size.height as f64;
-                self.color.r = x_percent;
-                self.color.g = y_percent;
-            }
-
-            WindowEvent::MouseInput {
-                device_id,
-                state,
-                button,
-                modifiers,
-            } => {}
-            _ => {}
-        }
-        false
-    }
 
     fn update(&mut self) {}
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
+        let _view = output
             .texture
             .create_view(&(wgpu::TextureViewDescriptor::default()));
         let mut encoder = self
@@ -213,10 +176,15 @@ impl State {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view: &_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(self.color),
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
                         store: true,
                     },
                 })],
@@ -233,10 +201,9 @@ impl State {
 }
 
 pub async fn run() {
-    env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_title("time to learn shit boys")
+        .with_title("test")
         .build(&event_loop)
         .unwrap();
     let mut state = State::new(window).await;
@@ -244,30 +211,20 @@ pub async fn run() {
         Event::WindowEvent {
             ref event,
             window_id,
-        } if window_id == state.window.id() => {
-            if !state.input(event) {
-                match event {
-                    WindowEvent::Resized(physical_size) => {
-                        state.resize(*physical_size);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        state.resize(**new_inner_size);
-                    }
-                    WindowEvent::CloseRequested
-                    | WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                    
-                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
+        } if window_id == state.window.id() => match event {
+            WindowEvent::CloseRequested
+            | WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+
+                        virtual_keycode: Some(VirtualKeyCode::Escape),
                         ..
-                    } => *control_flow = ControlFlow::Exit,
-                    _ => {}
-                }
-            }
-        }
+                    },
+                ..
+            } => *control_flow = ControlFlow::Exit,
+            _ => {}
+        },
 
         Event::RedrawRequested(window_id) if window_id == state.window().id() => {
             state.update();

@@ -1135,7 +1135,6 @@ dependencies = [
  "log",
  "naga",
  "pollster",
- "rustc-hash",
  "wgpu",
  "winit",
 ]
