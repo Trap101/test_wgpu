@@ -1,3 +1,4 @@
+mod surface;
 use log::debug;
 use naga::FastHashMap;
 use wgpu::{util::DeviceExt, BindGroup};
@@ -6,16 +7,19 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+trait Vertex{
+    fn desc() -> wgpu::VertexBufferLayout<'static>;
+}
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
+struct TexVertex {
     position: [f32; 3],
     tex_coords: [f32; 2],
 }
-impl Vertex {
+impl TexVertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<TexVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -33,16 +37,15 @@ impl Vertex {
     }
 }
 
-const VERTICES: &[Vertex] = &[
+const VERTICES: &[TexVertex] = &[
     // Changed
-    Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.00759614], }, // A
-    Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.43041354], }, // B
-    Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 0.949397], }, // C
-    Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 0.84732914], }, // D
-    Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 0.2652641], }, // E
+    TexVertex { position: [-1.0, -1.0, 0.0], tex_coords: [0.0, 1.0], }, // B
+    TexVertex { position: [-1.0, 1.0, 0.0], tex_coords: [0.0, 0.0], }, // C
+    TexVertex { position: [1.0, -1.0, 0.0], tex_coords: [1.0,1.0], }, // D
+    TexVertex { position: [1.0, 1.0, 0.0], tex_coords: [1.0,0.0], }, // E
 ];
  
-const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
+const INDICES: &[u16] = &[0,1,2,2,1,0,0,2,1,1,3,2,1,2,3,3,2,1,2,3,1];
 struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -126,7 +129,6 @@ impl State {
 
         use image::GenericImageView;
         let dimensions = diffuse_image.dimensions();
-
         let texture_size = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -171,7 +173,7 @@ impl State {
                 rows_per_image: Some(std::num::NonZeroU32::new(dimensions.1).unwrap().get()),
             },
             texture_size,
-        );
+      );
         let diffuse_texture_view =
             diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -179,7 +181,7 @@ impl State {
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
@@ -257,7 +259,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &vertex,
                 entry_point: "main",        // 1.
-                buffers: &[Vertex::desc()], // 2.
+                buffers: &[TexVertex::desc()], // 2.
             },
             fragment: Some(wgpu::FragmentState {
                 // 3.
@@ -295,7 +297,7 @@ impl State {
         //vertex buffer
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice::<Vertex, u8>(VERTICES),
+            contents: bytemuck::cast_slice::<TexVertex, u8>(VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
